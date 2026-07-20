@@ -3,8 +3,21 @@ import type { IncomeCategory, TipDraft } from '../types';
 
 const LAST_SOURCE_KEY = 'tip-input:last-source';
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
+function toLocalDateString(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Late-night entries (12am-6am) usually belong to the shift that started the
+// previous evening, so default to yesterday's date during that window.
+function defaultDate() {
+  const now = new Date();
+  if (now.getHours() < 6) {
+    now.setDate(now.getDate() - 1);
+  }
+  return toLocalDateString(now);
 }
 
 interface Props {
@@ -12,7 +25,7 @@ interface Props {
 }
 
 export function TipForm({ onSubmit }: Props) {
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(defaultDate);
   const [amount, setAmount] = useState('');
   const [source, setSource] = useState(() => localStorage.getItem(LAST_SOURCE_KEY) ?? '');
   const [category, setCategory] = useState<IncomeCategory>('Tips');
