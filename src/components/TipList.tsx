@@ -20,7 +20,7 @@ interface Props {
 
 export function TipList({ tips, onDelete }: Props) {
   if (tips.length === 0) {
-    return <p className="tip-list__empty">No tips yet — add your first one above.</p>;
+    return <p className="tip-list__empty">No entries yet - add your first one above.</p>;
   }
 
   const groups = new Map<string, Tip[]>();
@@ -38,19 +38,20 @@ export function TipList({ tips, onDelete }: Props) {
           {dayTips.map((tip) => (
             <div key={tip.id} className="tip-card">
               <div className="tip-card__main">
-                <span className="tip-card__amount">{formatCurrency(tip.amount)}</span>
-                {(tip.source || tip.note) && (
-                  <span className="tip-card__meta">
-                    {[tip.source, tip.note].filter(Boolean).join(' · ')}
-                  </span>
-                )}
+                <span className="tip-card__amount">
+                  {formatCurrency(tip.amount)}
+                  {tip.category === 'Wages' && <span className="tip-card__badge">Wages</span>}
+                </span>
+                <span className="tip-card__meta">
+                  {[tip.source, tip.note].filter(Boolean).join(' · ')}
+                </span>
               </div>
               <button
                 type="button"
                 className="tip-card__delete"
-                aria-label="Delete tip"
+                aria-label="Delete entry"
                 onClick={() => {
-                  if (confirm('Delete this tip?')) onDelete(tip.id);
+                  if (confirm('Delete this entry?')) onDelete(tip.id);
                 }}
               >
                 ×

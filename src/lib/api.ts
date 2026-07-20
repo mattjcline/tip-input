@@ -6,7 +6,7 @@ const TOKEN = import.meta.env.VITE_APPS_SCRIPT_TOKEN as string | undefined;
 function assertConfigured() {
   if (!BASE_URL || !TOKEN) {
     throw new Error(
-      'Missing VITE_APPS_SCRIPT_URL / VITE_APPS_SCRIPT_TOKEN — copy .env.example to .env.local and fill them in.'
+      'Missing VITE_APPS_SCRIPT_URL / VITE_APPS_SCRIPT_TOKEN - copy .env.example to .env.local and fill them in.'
     );
   }
 }

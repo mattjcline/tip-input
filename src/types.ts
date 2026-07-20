@@ -1,8 +1,11 @@
+export type IncomeCategory = 'Tips' | 'Wages';
+
 export interface Tip {
   id: number;
   date: string; // YYYY-MM-DD
-  amount: number;
   source: string;
+  amount: number;
+  category: IncomeCategory;
   note: string;
 }
 

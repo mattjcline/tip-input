@@ -26,6 +26,7 @@ export function SummaryBar({ tips }: Props) {
   let allTotal = 0;
 
   for (const tip of tips) {
+    if (tip.category !== 'Tips') continue;
     const date = new Date(tip.date + 'T00:00:00');
     allTotal += tip.amount;
     if (date >= monthStart) monthTotal += tip.amount;
