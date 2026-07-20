@@ -131,6 +131,13 @@
   gap: 10px;
 }
 
+.tip-form__row input {
+  /* iOS's native date input has a wide intrinsic min-width and won't
+     shrink to its grid track without this, pushing the row's second
+     child outside the form's bounds */
+  min-width: 0;
+}
+
 .tip-form__error {
   color: var(--danger);
   font-size: 14px;
