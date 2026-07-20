@@ -139,11 +139,57 @@
   gap: 10px;
 }
 
-.tip-form__row input {
+.tip-form__row input,
+.tip-form__row .tip-form__autocomplete {
   /* iOS's native date input has a wide intrinsic min-width and won't
      shrink to its grid track without this, pushing the row's second
      child outside the form's bounds */
   min-width: 0;
+}
+
+.tip-form__autocomplete {
+  position: relative;
+}
+
+.tip-form__autocomplete input {
+  width: 100%;
+}
+
+.tip-form__suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.tip-form__suggestions li + li {
+  margin-top: 2px;
+}
+
+.tip-form__suggestions button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.tip-form__suggestions button:hover,
+.tip-form__suggestions button:active {
+  background: var(--surface-alt);
 }
 
 .tip-form__error {

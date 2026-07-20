@@ -35,6 +35,11 @@ export function TipForm({ onSubmit, knownSources }: Props) {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const suggestions = knownSources.filter(
+    (s) => s.toLowerCase().includes(source.trim().toLowerCase()) && s !== source
+  );
 
   const canSubmit = date !== '' && amount !== '' && !Number.isNaN(Number(amount)) && source.trim() !== '';
 
@@ -96,20 +101,29 @@ export function TipForm({ onSubmit, knownSources }: Props) {
           onChange={(e) => setDate(e.target.value)}
           aria-label="Date"
         />
-        <input
-          type="text"
-          placeholder="Source (bar)"
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          aria-label="Source"
-          list="tip-form-source-list"
-          autoComplete="off"
-        />
-        <datalist id="tip-form-source-list">
-          {knownSources.map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
+        <div className="tip-form__autocomplete">
+          <input
+            type="text"
+            placeholder="Source (bar)"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            aria-label="Source"
+            autoComplete="off"
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="tip-form__suggestions">
+              {suggestions.map((s) => (
+                <li key={s}>
+                  <button type="button" onClick={() => setSource(s)}>
+                    {s}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <input
