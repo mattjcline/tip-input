@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# contains real sheet/script IDs
+apps-script/.clasp.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
