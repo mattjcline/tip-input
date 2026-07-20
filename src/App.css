@@ -42,6 +42,8 @@
   flex-direction: column;
   gap: 4px;
   box-shadow: var(--shadow);
+  text-align: left;
+  width: 100%;
 }
 
 .summary-bar__label {
@@ -53,6 +55,12 @@
   font-size: 17px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  transition: filter 0.15s;
+}
+
+.summary-bar__value--blurred {
+  filter: blur(6px);
+  user-select: none;
 }
 
 /* Tip form */
