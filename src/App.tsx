@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import './App.css';
 import { SummaryBar } from './components/SummaryBar';
 import { TipForm } from './components/TipForm';
@@ -7,6 +8,20 @@ import { useTips } from './hooks/useTips';
 function App() {
   const { tips, loading, error, create, remove } = useTips();
 
+  const knownSources = useMemo(() => {
+    // Historical entries mix straight and curly apostrophes for the same
+    // source ("Louie's" vs "Louie's") - normalize so they merge into one
+    // suggestion instead of showing as near-duplicates.
+    const normalize = (s: string) => s.replace(/[‘’]/g, "'");
+    const counts = new Map<string, number>();
+    for (const tip of tips) {
+      if (!tip.source) continue;
+      const key = normalize(tip.source);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([source]) => source);
+  }, [tips]);
+
   return (
     <div className="app">
       <header className="app__header">
@@ -15,7 +30,7 @@ function App() {
 
       <SummaryBar tips={tips} />
 
-      <TipForm onSubmit={create} />
+      <TipForm onSubmit={create} knownSources={knownSources} />
 
       {error && <p className="app__error">{error}</p>}
       {loading ? <p className="app__loading">Loading…</p> : <TipList tips={tips} onDelete={remove} />}

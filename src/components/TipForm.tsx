@@ -22,12 +22,15 @@ function defaultDate() {
 
 interface Props {
   onSubmit: (draft: TipDraft) => Promise<void>;
+  knownSources: string[];
 }
 
-export function TipForm({ onSubmit }: Props) {
+export function TipForm({ onSubmit, knownSources }: Props) {
   const [date, setDate] = useState(defaultDate);
   const [amount, setAmount] = useState('');
-  const [source, setSource] = useState(() => localStorage.getItem(LAST_SOURCE_KEY) ?? '');
+  const [source, setSource] = useState(
+    () => localStorage.getItem(LAST_SOURCE_KEY) ?? "Louie's"
+  );
   const [category, setCategory] = useState<IncomeCategory>('Tips');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -99,7 +102,14 @@ export function TipForm({ onSubmit }: Props) {
           value={source}
           onChange={(e) => setSource(e.target.value)}
           aria-label="Source"
+          list="tip-form-source-list"
+          autoComplete="off"
         />
+        <datalist id="tip-form-source-list">
+          {knownSources.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
       </div>
 
       <input
