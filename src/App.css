@@ -1,0 +1,209 @@
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.app__header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.app__error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
+
+.app__loading {
+  color: var(--text-muted);
+  text-align: center;
+  margin: 24px 0;
+}
+
+/* Summary bar */
+
+.summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.summary-bar__stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow);
+}
+
+.summary-bar__label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.summary-bar__value {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tip form */
+
+.tip-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tip-form__amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0 4px;
+}
+
+.tip-form__currency {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tip-form__amount {
+  border: none;
+  background: transparent;
+  font-size: 44px;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.tip-form__amount::-webkit-outer-spin-button,
+.tip-form__amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tip-form__amount:focus {
+  outline: none;
+}
+
+.tip-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tip-form__error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
+
+.tip-form__submit {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.tip-form__submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Tip list */
+
+.tip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tip-list__empty {
+  color: var(--text-muted);
+  text-align: center;
+  margin: 24px 0;
+}
+
+.tip-list__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tip-list__heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 4px;
+}
+
+.tip-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tip-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tip-card__amount {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tip-card__meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tip-card__delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.tip-card__delete:hover {
+  color: var(--danger);
+  background: var(--surface-alt);
+}
