@@ -20,6 +20,7 @@ accessed through a Google Apps Script Web App that acts as a thin JSON API.
 - `npm run build` - typecheck (`tsc -b`) then production build to `dist/`
 - `npm run preview` - serve the production build locally
 - `npm run lint` - Oxlint (config in `.oxlintrc.json`)
+- `npm run deploy` - build and ship to the live instance, see "Deploying" below
 
 There is no test suite configured yet.
 
@@ -63,12 +64,31 @@ Two independently deployed pieces:
 
 ### Backend data model (`apps-script/Code.gs`)
 
-The spreadsheet has one relevant tab, `Tips`, with columns `Date | Amount |
-Source | Note`. Row numbers double as record IDs (`Tip.id`) - there's no
-separate ID column. `addTip_`/`updateTip_`/`deleteTip_` operate directly on
-sheet rows via that row-number ID. A shared-secret token
-(`PropertiesService` script property `SHARED_SECRET`) gates every request
-since the deployment is `Anyone` access.
+Binds to an existing tab named `Income` (not created by the script) -
+column A is unused, rows 1-6 are a title/example block, the real header is
+row 7, and data starts at row 8, in columns B-F: `Date (MM-DD-YYYY) |
+Source | $ Amount | Income Category | Notes (Optional)`. `Income Category`
+is `Tips` or `Wages` - this sheet tracks both, not just tips. Row numbers
+double as record IDs (`Tip.id`) - there's no separate ID column.
+`addTip_`/`updateTip_`/`deleteTip_` operate directly on sheet rows via that
+row-number ID, offset by the `DATA_START_ROW`/`START_COL` constants. A
+shared-secret token (`PropertiesService` script property `SHARED_SECRET`)
+gates every request since the deployment is anonymous-access. See
+`apps-script/README.md` for the full deployment procedure, including a
+one-time `doGet`-run authorization step that's easy to miss.
+
+## Deploying
+
+The live instance is static hosting on a home NAS, managed in the separate
+private `shenron-docker` repo (expected at `~/dev/shenron-docker`) - see
+its `CLAUDE.md` "Tip Input" section for the hosting setup (nginx bind-
+mounting a committed `dist/`, no build step on the NAS side, exposed via
+`tailscale serve` for the HTTPS a PWA needs). `npm run deploy`
+(`scripts/deploy.sh`) builds this repo, copies `dist/` into that checkout,
+and commits + pushes there after confirming - the NAS's git hook
+auto-deploys on push. The backend Apps Script URL/token get baked into the
+built JS bundle at build time (`VITE_APPS_SCRIPT_*`), so a token rotation
+requires a redeploy, not just a config change.
 
 ### PWA / iOS specifics
 

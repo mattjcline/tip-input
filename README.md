@@ -30,3 +30,14 @@ runs standalone (no browser chrome) once installed.
 - `npm run build` - typecheck (`tsc -b`) and production build
 - `npm run preview` - serve the production build locally
 - `npm run lint` - run Oxlint
+- `npm run deploy` - build and push to the live instance (see "Deploying" below)
+
+## Deploying
+
+The live instance runs on a home NAS (`shenron-docker`, a separate private
+repo), serving this app's committed production build as a static site - see
+that repo's `CLAUDE.md` ("Tip Input" section) for the hosting setup. To ship
+a change: `npm run deploy` builds, copies `dist/` into the `shenron-docker`
+checkout (expected at `~/dev/shenron-docker`, override with
+`SHENRON_DOCKER_DIR`), and pushes after confirming - the NAS auto-deploys on
+push.
