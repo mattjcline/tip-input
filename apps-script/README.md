@@ -1,4 +1,12 @@
-# Apps Script backend
+# Apps Script backend (deprecated)
+
+The app has moved to a Supabase backend - see the root `CLAUDE.md`. This
+directory is retained temporarily so `scripts/migrate-to-supabase.mjs` can
+still pull historical data from it, and as a reference for how the old
+setup worked. Safe to delete (`git rm -r apps-script/`) once the Supabase
+migration is confirmed working and no further imports are needed.
+
+---
 
 This is the JSON API the frontend talks to. It runs as a Google Apps Script
 bound to your `Income` spreadsheet tab, deployed as a Web App.

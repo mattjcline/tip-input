@@ -9,10 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A mobile-first, installable web app (iOS PWA) for quickly logging tips. It
-replaces manually editing a Google Sheet with a fast entry form. There is no
-traditional backend/database - the Google Sheet itself is the datastore,
-accessed through a Google Apps Script Web App that acts as a thin JSON API.
+A mobile-first, installable web app (iOS PWA) for quickly logging tips. It's
+a multi-user app - each signed-in user only sees and edits their own tips.
+The backend is Supabase (managed Postgres + Auth), accessed directly from
+the frontend via `@supabase/supabase-js`; there is no separately deployed
+custom backend.
 
 ## Commands
 
@@ -20,78 +21,100 @@ accessed through a Google Apps Script Web App that acts as a thin JSON API.
 - `npm run build` - typecheck (`tsc -b`) then production build to `dist/`
 - `npm run preview` - serve the production build locally
 - `npm run lint` - Oxlint (config in `.oxlintrc.json`)
-- `npm run deploy` - build and ship to the live instance, see "Deploying" below
+- `npm run migrate` - one-off script to import legacy Google Sheet data into
+  Supabase, see "Migrating from the old Google Sheet backend" below
 
 There is no test suite configured yet.
 
 ### Local setup
 
-The frontend needs a deployed Apps Script backend to talk to. Copy
-`.env.example` to `.env.local` and fill in `VITE_APPS_SCRIPT_URL` and
-`VITE_APPS_SCRIPT_TOKEN` (see `apps-script/README.md` for how to deploy the
-backend and obtain these). Without them, API calls throw immediately with a
-clear error rather than silently failing.
+The frontend needs a Supabase project to talk to. Copy `.env.example` to
+`.env.local` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+from your Supabase project's API settings, and apply `supabase/schema.sql`
+via the Supabase SQL editor. Without the env vars set, API calls throw
+immediately with a clear error rather than silently failing.
 
 ## Architecture
 
-Two independently deployed pieces:
-
-1. **Frontend** (this repo root) - Vite + React + TypeScript SPA.
-2. **Backend** (`apps-script/`) - a single Google Apps Script file
-   (`Code.gs`) deployed as a Web App bound to the tips spreadsheet. It is
-   *not* built or bundled by Vite/npm - it's deployed manually by pasting
-   into the Apps Script editor (see `apps-script/README.md`). Changes to
-   `apps-script/Code.gs` in this repo do not take effect until manually
-   redeployed as a new version in the Apps Script UI.
+- **Frontend** (this repo root) - Vite + React + TypeScript SPA, hosted as a
+  static site on GitHub Pages.
+- **Backend** - Supabase (Postgres + Auth), accessed directly from the
+  browser. Row Level Security (RLS) policies, not application code, enforce
+  that each user only ever sees their own rows - see "Supabase schema"
+  below. The Supabase URL and anon key are safe to bake into the public
+  client bundle; RLS is the actual security boundary, not key secrecy.
 
 ### Frontend structure
 
-- `src/lib/api.ts` - the only module that talks to the Apps Script backend.
-  GETs pass an auth token as a query param; POSTs send `{ token, action,
-  payload }` as `text/plain` (not `application/json`) specifically to avoid
-  triggering a CORS preflight - Apps Script Web Apps don't handle OPTIONS
-  requests. If you add new backend actions, follow this same convention.
+- `src/lib/supabase.ts` - creates the shared `supabase-js` client from
+  `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+- `src/lib/api.ts` - the only module that talks to the `tips` table
+  (`fetchTips`/`addTip`/`updateTip`/`deleteTip`). Queries don't need
+  explicit `user_id` filters - RLS enforces that server-side regardless of
+  what's asked for.
+- `src/hooks/useSession.ts` - tracks the current Supabase auth session
+  (`getSession` + `onAuthStateChange`). `src/App.tsx` gates the whole app on
+  this: no session renders `<Login />` instead.
+- `src/components/Login.tsx` - passwordless sign-in: email -> 6-digit OTP
+  code -> `supabase.auth.verifyOtp`. Deliberately uses the typed code rather
+  than a clickable magic link, since a link tapped from the iOS Mail app
+  opens in Safari instead of the installed home-screen PWA. Requires
+  `{{ .Token }}` to be added to the Magic Link email template in the
+  Supabase Dashboard (Authentication -> Email Templates) - the default
+  template only includes the link, not the code.
 - `src/hooks/useTips.ts` - owns all tip state and does optimistic
   create/update/delete against the in-memory list, rolling back on API
   failure. Components should go through this hook rather than calling
   `lib/api.ts` directly.
-- `src/types.ts` - the `Tip` shape shared between frontend and (implicitly)
-  the backend's JSON responses. Keep in sync with `rowToTip_` in
-  `apps-script/Code.gs` if the data model changes.
+- `src/types.ts` - the `Tip` shape shared between frontend and the `tips`
+  table. Keep in sync with `supabase/schema.sql` if the data model changes.
 - `src/components/` - `TipForm` (entry), `TipList` (grouped-by-date display
-  with delete), `SummaryBar` (week/month/all-time totals computed
-  client-side from the loaded tips).
+  with delete), `SummaryBar` (week/month/YTD totals computed client-side
+  from the loaded tips).
 
-### Backend data model (`apps-script/Code.gs`)
+## Supabase schema
 
-Binds to an existing tab named `Income` (not created by the script) -
-column A is unused, rows 1-6 are a title/example block, the real header is
-row 7, and data starts at row 8, in columns B-F: `Date (MM-DD-YYYY) |
-Source | $ Amount | Income Category | Notes (Optional)`. `Income Category`
-is `Tips` or `Wages` - this sheet tracks both, not just tips. Row numbers
-double as record IDs (`Tip.id`) - there's no separate ID column.
-`addTip_`/`updateTip_`/`deleteTip_` operate directly on sheet rows via that
-row-number ID, offset by the `DATA_START_ROW`/`START_COL` constants. A
-shared-secret token (`PropertiesService` script property `SHARED_SECRET`)
-gates every request since the deployment is anonymous-access. See
-`apps-script/README.md` for the full deployment procedure, including a
-one-time `doGet`-run authorization step that's easy to miss.
+`supabase/schema.sql` defines the `tips` table and its RLS policies - apply
+it by pasting into the Supabase project's SQL editor (not managed via
+Supabase CLI migrations, this project is small enough that isn't worth the
+overhead). `id` is a `bigint identity` column (not `uuid`) so it stays a
+plain JS `number` throughout the frontend. `user_id` defaults to
+`auth.uid()` so client inserts don't need to set it, and a `with check`
+policy enforces server-side that it can't be spoofed to another user's id.
+After changing the schema, re-verify RLS with a real signed-in session -
+enabling RLS with a missing policy silently locks out the owning user too,
+not just other users.
+
+## Migrating from the old Google Sheet backend
+
+This app used to be backed by a Google Sheet via a Google Apps Script Web
+App (`apps-script/`, now retired/removed once migration is confirmed - see
+git history or `apps-script/README.md` if it's still present). Historical
+data was carried over with `scripts/migrate-to-supabase.mjs`, a one-off
+script (not part of the app bundle) that read from the old Apps Script
+`doGet` endpoint and wrote into Supabase via the service-role key, tagged
+with a target user's `auth.users` id. Not idempotent by default - rerunning
+it duplicates rows unless passed `--replace`. See
+`.env.migration.example` for the env vars it needs.
 
 ## Deploying
 
-The live instance is static hosting on a home NAS, managed in the separate
-private `shenron-docker` repo (expected at `~/dev/shenron-docker`) - see
-its `CLAUDE.md` "Tip Input" section for the hosting setup (nginx bind-
-mounting a committed `dist/`, no build step on the NAS side, exposed via
-`tailscale serve` for the HTTPS a PWA needs). `npm run deploy`
-(`scripts/deploy.sh`) builds this repo, copies `dist/` into that checkout,
-and commits + pushes there after confirming - the NAS's git hook
-auto-deploys on push. The backend Apps Script URL/token get baked into the
-built JS bundle at build time (`VITE_APPS_SCRIPT_*`), so a token rotation
-requires a redeploy, not just a config change.
+Deploys automatically via `.github/workflows/deploy.yml` on every push to
+`main`: builds with `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` from GitHub
+Actions repo secrets, publishes to GitHub Pages. Live at
+`https://mattjcline.github.io/tip-input/`. The repo must stay public - GitHub
+Pages on the free plan doesn't support private repos. One-time manual setup
+if this ever needs to be redone: repo Settings -> Pages -> Source = "GitHub
+Actions"; Supabase Dashboard -> Authentication -> URL Configuration must
+list the Pages URL (and `http://localhost:5173/` for local dev) as an
+allowed Site URL / Redirect URL.
 
 ### PWA / iOS specifics
 
+- Served from a GitHub Pages project page, not the domain root - `vite.config.ts`
+  sets `base: '/tip-input/'` and the PWA manifest's `start_url`/`scope`/`id`
+  match. Get this wrong and "Add to Home Screen" installs will silently
+  break (wrong scope/start URL) rather than erroring visibly.
 - PWA behavior (manifest, service worker, icon set) is configured via
   `vite-plugin-pwa` in `vite.config.ts`; icons live in `public/` and were
   generated from `design/icon-source.svg` (regenerate with `rsvg-convert` if

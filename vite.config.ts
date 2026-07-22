@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/tip-input/',
   plugins: [
     react(),
     VitePWA({
@@ -12,12 +13,14 @@ export default defineConfig({
       manifest: {
         name: 'Tips',
         short_name: 'Tips',
-        description: 'Quick tip logging, backed by a Google Sheet',
+        description: 'Quick tip logging',
         theme_color: '#1f8a5c',
         background_color: '#f4f5f7',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: '/tip-input/',
+        scope: '/tip-input/',
+        id: '/tip-input/',
         icons: [
           {
             src: 'pwa-192.png',
