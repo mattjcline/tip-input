@@ -52,6 +52,8 @@ for (const [key, value] of Object.entries(required)) {
   }
 }
 
+const TABLE = 'tip_input_tips';
+
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const replace = args.includes('--replace');
@@ -95,13 +97,13 @@ async function main() {
 
   if (replace) {
     console.log(`--replace: deleting existing rows for user ${TARGET_USER_ID}...`);
-    const { error } = await supabase.from('tips').delete().eq('user_id', TARGET_USER_ID);
+    const { error } = await supabase.from(TABLE).delete().eq('user_id', TARGET_USER_ID);
     if (error) throw new Error(error.message);
   }
 
   let inserted = 0;
   for (const batch of chunk(rows, 500)) {
-    const { error } = await supabase.from('tips').insert(batch);
+    const { error } = await supabase.from(TABLE).insert(batch);
     if (error) throw new Error(error.message);
     inserted += batch.length;
     console.log(`Inserted ${inserted}/${rows.length}...`);

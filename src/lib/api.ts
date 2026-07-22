@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Tip, TipDraft } from '../types';
 
+const TABLE = 'tip_input_tips';
 const COLUMNS = 'id,date,source,amount,category,note';
 
 // PostgREST returns `numeric` columns as strings (to avoid float precision
@@ -13,7 +14,7 @@ function toTip(row: TipRow): Tip {
 
 export async function fetchTips(): Promise<Tip[]> {
   const { data, error } = await supabase
-    .from('tips')
+    .from(TABLE)
     .select(COLUMNS)
     .order('date', { ascending: false })
     .order('id', { ascending: false });
@@ -22,7 +23,7 @@ export async function fetchTips(): Promise<Tip[]> {
 }
 
 export async function addTip(draft: TipDraft): Promise<Tip> {
-  const { data, error } = await supabase.from('tips').insert(draft).select(COLUMNS).single();
+  const { data, error } = await supabase.from(TABLE).insert(draft).select(COLUMNS).single();
   if (error) throw new Error(error.message);
   return toTip(data as unknown as TipRow);
 }
@@ -30,7 +31,7 @@ export async function addTip(draft: TipDraft): Promise<Tip> {
 export async function updateTip(tip: Tip): Promise<Tip> {
   const { id, ...fields } = tip;
   const { data, error } = await supabase
-    .from('tips')
+    .from(TABLE)
     .update(fields)
     .eq('id', id)
     .select(COLUMNS)
@@ -40,6 +41,6 @@ export async function updateTip(tip: Tip): Promise<Tip> {
 }
 
 export async function deleteTip(id: number): Promise<void> {
-  const { error } = await supabase.from('tips').delete().eq('id', id);
+  const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw new Error(error.message);
 }

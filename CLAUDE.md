@@ -43,12 +43,21 @@ immediately with a clear error rather than silently failing.
   that each user only ever sees their own rows - see "Supabase schema"
   below. The Supabase URL and anon key are safe to bake into the public
   client bundle; RLS is the actual security boundary, not key secrecy.
+  This app shares a Supabase project with an unrelated app (`bar-math`) -
+  free-tier accounts are capped at 2 projects, so rather than spin up a
+  third, tip-input's table lives alongside bar-math's in the same project
+  (hence `tip_input_tips` rather than a generic `tips` name, to stay
+  unambiguous in the shared table browser). One consequence worth knowing:
+  Supabase Auth's user pool is per-project, not per-app, so anyone with an
+  account in bar-math could technically sign into tip-input (and vice
+  versa) - fine for personal/trusted use, but not a real tenant boundary if
+  that ever changes.
 
 ### Frontend structure
 
 - `src/lib/supabase.ts` - creates the shared `supabase-js` client from
   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
-- `src/lib/api.ts` - the only module that talks to the `tips` table
+- `src/lib/api.ts` - the only module that talks to the `tip_input_tips` table
   (`fetchTips`/`addTip`/`updateTip`/`deleteTip`). Queries don't need
   explicit `user_id` filters - RLS enforces that server-side regardless of
   what's asked for.
@@ -66,15 +75,17 @@ immediately with a clear error rather than silently failing.
   create/update/delete against the in-memory list, rolling back on API
   failure. Components should go through this hook rather than calling
   `lib/api.ts` directly.
-- `src/types.ts` - the `Tip` shape shared between frontend and the `tips`
-  table. Keep in sync with `supabase/schema.sql` if the data model changes.
+- `src/types.ts` - the `Tip` shape shared between frontend and the
+  `tip_input_tips` table. Keep in sync with `supabase/schema.sql` if the
+  data model changes.
 - `src/components/` - `TipForm` (entry), `TipList` (grouped-by-date display
   with delete), `SummaryBar` (week/month/YTD totals computed client-side
   from the loaded tips).
 
 ## Supabase schema
 
-`supabase/schema.sql` defines the `tips` table and its RLS policies - apply
+`supabase/schema.sql` defines the `tip_input_tips` table and its RLS
+policies - apply
 it by pasting into the Supabase project's SQL editor (not managed via
 Supabase CLI migrations, this project is small enough that isn't worth the
 overhead). `id` is a `bigint identity` column (not `uuid`) so it stays a
