@@ -1,11 +1,23 @@
 import { useMemo } from 'react';
 import './App.css';
+import { Login } from './components/Login';
 import { SummaryBar } from './components/SummaryBar';
 import { TipForm } from './components/TipForm';
 import { TipList } from './components/TipList';
+import { useSession } from './hooks/useSession';
 import { useTips } from './hooks/useTips';
+import { supabase } from './lib/supabase';
 
 function App() {
+  const { session, loading: sessionLoading } = useSession();
+
+  if (sessionLoading) return null;
+  if (!session) return <Login />;
+
+  return <TipApp />;
+}
+
+function TipApp() {
   const { tips, loading, error, create, remove } = useTips();
 
   const knownSources = useMemo(() => {
@@ -26,6 +38,9 @@ function App() {
     <div className="app">
       <header className="app__header">
         <h1>Tips</h1>
+        <button className="app__signout" onClick={() => supabase.auth.signOut()}>
+          Sign out
+        </button>
       </header>
 
       <SummaryBar tips={tips} />

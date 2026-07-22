@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# contains real service-role key + Apps Script token, used only by the
+# one-off migration script
+.env.migration
+
 # contains real sheet/script IDs
 apps-script/.clasp.json
 
