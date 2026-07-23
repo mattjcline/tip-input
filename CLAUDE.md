@@ -80,21 +80,50 @@ immediately with a clear error rather than silently failing.
   data model changes.
 - `src/components/` - `TipForm` (entry), `TipList` (grouped-by-date display
   with delete), `SummaryBar` (week/month/YTD totals computed client-side
-  from the loaded tips).
+  from the loaded tips), `NameAmountList` (shared repeatable name+amount row
+  editor used by Tips In/Out/Money Owed - see VERBOSE_MODE below).
 
 ## Supabase schema
 
-`supabase/schema.sql` defines the `tip_input_tips` table and its RLS
-policies - apply
-it by pasting into the Supabase project's SQL editor (not managed via
-Supabase CLI migrations, this project is small enough that isn't worth the
-overhead). `id` is a `bigint identity` column (not `uuid`) so it stays a
-plain JS `number` throughout the frontend. `user_id` defaults to
-`auth.uid()` so client inserts don't need to set it, and a `with check`
-policy enforces server-side that it can't be spoofed to another user's id.
-After changing the schema, re-verify RLS with a real signed-in session -
-enabling RLS with a missing policy silently locks out the owning user too,
-not just other users.
+`supabase/schema.sql` defines the full current schema (for a fresh
+project) and its RLS policies. The live project was bootstrapped by pasting
+that file into the SQL editor once; later changes are incremental files
+under `supabase/migrations/`, applied in order against the live database -
+`schema.sql` itself is only correct to run top-to-bottom against a brand
+new project (not managed via Supabase CLI migrations, this project is small
+enough that isn't worth the overhead). `id` is a `bigint identity` column
+(not `uuid`) so it stays a plain JS `number` throughout the frontend.
+`user_id` defaults to `auth.uid()` so client inserts don't need to set it,
+and a `with check` policy enforces server-side that it can't be spoofed to
+another user's id. After changing the schema, re-verify RLS with a real
+signed-in session - enabling RLS with a missing policy silently locks out
+the owning user too, not just other users.
+
+### VERBOSE_MODE
+
+A per-user flag, not a build-time toggle - read from
+`session.user.user_metadata.verbose_mode` via `isVerboseMode()`/`useSession()`
+in `src/hooks/useSession.ts`. There's no in-app UI to turn it on; it's
+flipped once per account via the Supabase Dashboard (Authentication ->
+Users -> edit `raw_user_meta_data`) after that person signs up. When off
+(the default, including for every existing user), the app is byte-for-byte
+identical to the non-verbose experience - all verbose fields are additive
+and gated on the flag in `TipForm`/`TipList`.
+
+Verbose entries add Credit Card Tips, Cash Tips (their sum becomes `amount`,
+computed server-side - see below), a required Shift Type (`bar`/`floor`,
+independent of the existing Tips/Wages `category`), and three repeatable
+name+amount lists (Tips In, Tips Out, Money Owed) stored in
+`tip_input_transfers`, one table with a `kind` discriminator rather than
+three near-identical tables. Creating a verbose entry writes to two tables
+(the shift row plus N transfer rows) atomically via the
+`create_verbose_tip` Postgres RPC (`supabase/schema.sql`) rather than
+chained client inserts - a partial write here would silently lose
+money-owed data, which a single-transaction RPC call can't do. `amount` is
+computed inside the RPC from the two breakdown numbers rather than trusted
+from the client, but it's an ordinary insert value (not a `generated
+always as` column), so it has no effect on non-verbose inserts or the
+legacy rows migrated from the old Sheet.
 
 ## Migrating from the old Google Sheet backend
 

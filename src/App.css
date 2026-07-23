@@ -186,6 +186,19 @@
   outline: none;
 }
 
+.tip-form__money-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tip-form__computed-total {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  margin: 0;
+}
+
 .tip-form__category {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -289,6 +302,56 @@
   cursor: default;
 }
 
+/* Name/amount list (Tips in / Tips out / Money owed) */
+
+.name-amount-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.name-amount-list__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.name-amount-list__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.name-amount-list__remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.name-amount-list__remove:hover {
+  color: var(--danger);
+  background: var(--surface-alt);
+}
+
+.name-amount-list__add {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 4px;
+}
+
+.name-amount-list__add:hover {
+  color: var(--text);
+}
+
 /* Tip list */
 
 .tip-list {
@@ -362,6 +425,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tip-card__detail {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: normal;
 }
 
 .tip-card__delete {

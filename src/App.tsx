@@ -18,7 +18,8 @@ function App() {
 }
 
 function TipApp() {
-  const { tips, loading, error, create, remove } = useTips();
+  const { verboseMode } = useSession();
+  const { tips, loading, error, create, createVerbose, remove } = useTips();
 
   const knownSources = useMemo(() => {
     // Historical entries mix straight and curly apostrophes for the same
@@ -45,7 +46,12 @@ function TipApp() {
 
       <SummaryBar tips={tips} />
 
-      <TipForm onSubmit={create} knownSources={knownSources} />
+      <TipForm
+        onSubmit={create}
+        knownSources={knownSources}
+        verboseMode={verboseMode}
+        onSubmitVerbose={createVerbose}
+      />
 
       {error && <p className="app__error">{error}</p>}
       {loading ? <p className="app__loading">Loading…</p> : <TipList tips={tips} onDelete={remove} />}
