@@ -192,6 +192,13 @@
   gap: 10px;
 }
 
+.tip-form__money-row input {
+  /* Same fix as .tip-form__row: number inputs have an intrinsic min-width
+     that won't shrink to their grid track without this, pushing the
+     second input outside the form's bounds. */
+  min-width: 0;
+}
+
 .tip-form__computed-total {
   color: var(--text-muted);
   font-size: 13px;
@@ -321,6 +328,10 @@
   grid-template-columns: 1fr 1fr auto;
   gap: 8px;
   align-items: center;
+}
+
+.name-amount-list__row input {
+  min-width: 0;
 }
 
 .name-amount-list__remove {
