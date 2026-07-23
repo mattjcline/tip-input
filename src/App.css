@@ -220,11 +220,12 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
-  /* Match the height of the plain `input` rule (12px 14px padding at the
-     browser's default ~16px font) - this button's smaller font-size and
-     padding otherwise render a few px shorter, most noticeable on iOS
-     next to the native date input. */
-  min-height: 46px;
+  /* iOS Safari's native <input type="date"> renders its own internal
+     chrome taller than a plain text input's padding/font-size math would
+     suggest (measured ~54px on-device) - min-height can't shrink the date
+     input to match since it's already taller than that on its own, so
+     this has to grow to meet it rather than the other way around. */
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,15 +249,6 @@
      shrink to its grid track without this, pushing the row's second
      child outside the form's bounds */
   min-width: 0;
-}
-
-.tip-form__row input {
-  /* Pin to the same min-height as .tip-form__category-option rather than
-     relying on both sides computing the same intrinsic height - iOS
-     renders the native date input's chrome slightly differently than a
-     plain text input, so matching by padding/font math alone isn't
-     reliable. */
-  min-height: 46px;
 }
 
 .tip-form__autocomplete {
