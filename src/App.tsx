@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import './App.css';
 import { Login } from './components/Login';
 import { SummaryBar } from './components/SummaryBar';
@@ -24,6 +24,7 @@ function App() {
 function TipApp() {
   const { verboseMode, chartsEnabled } = useSession();
   const { tips, loading, error, create, createVerbose, remove } = useTips();
+  const [chartsExpanded, setChartsExpanded] = useState(false);
 
   const knownSources = useMemo(() => {
     // Historical entries mix straight and curly apostrophes for the same
@@ -50,6 +51,27 @@ function TipApp() {
 
       <SummaryBar tips={tips} />
 
+      {chartsEnabled && (
+        <div className="charts-toggle">
+          <button
+            type="button"
+            className="charts-toggle__button"
+            onClick={() => setChartsExpanded((v) => !v)}
+            aria-expanded={chartsExpanded}
+          >
+            Charts
+            <span className="charts-toggle__chevron" aria-hidden="true">
+              {chartsExpanded ? '▲' : '▼'}
+            </span>
+          </button>
+          {chartsExpanded && (
+            <Suspense fallback={null}>
+              <ChartsSection tips={tips} />
+            </Suspense>
+          )}
+        </div>
+      )}
+
       <TipForm
         onSubmit={create}
         knownSources={knownSources}
@@ -59,12 +81,6 @@ function TipApp() {
 
       {error && <p className="app__error">{error}</p>}
       {loading ? <p className="app__loading">Loading…</p> : <TipList tips={tips} onDelete={remove} />}
-
-      {chartsEnabled && (
-        <Suspense fallback={null}>
-          <ChartsSection tips={tips} />
-        </Suspense>
-      )}
     </div>
   );
 }
