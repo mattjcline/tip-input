@@ -23,8 +23,36 @@ custom backend.
 - `npm run lint` - Oxlint (config in `.oxlintrc.json`)
 - `npm run migrate` - one-off script to import legacy Google Sheet data into
   Supabase, see "Migrating from the old Google Sheet backend" below
+- `npm test` - run the test suite once (Vitest); `npm run test:watch` for
+  watch mode. Runs as part of `.github/workflows/deploy.yml` before the
+  build, so a failing test blocks the deploy.
 
-There is no test suite configured yet.
+### Testing
+
+Vitest + React Testing Library, configured in `vitest.config.ts` (kept
+separate from `vite.config.ts` so tests don't pull in `vite-plugin-pwa` -
+service worker generation has no place in a test run). `src/setupTests.ts`
+wires up `@testing-library/jest-dom` matchers and RTL's `cleanup()` after
+each test (needed because the config doesn't set `globals: true`, so RTL's
+usual auto-cleanup-on-`afterEach` detection doesn't fire on its own).
+
+Tests live next to the file they cover (`Foo.tsx` -> `Foo.test.tsx`).
+`src/lib/api.test.ts` mocks `./supabase` directly (a hand-rolled chainable
+query-builder stand-in - see `makeQuery` in that file) rather than hitting
+a real Supabase project; `src/hooks/useTips.test.ts` mocks `../lib/api`
+instead, one layer up. Component tests render through the actual DOM
+(`@testing-library/react` + `jsdom`) rather than shallow-rendering, and
+`TipForm.test.tsx` in particular exists to guard the app's core invariant
+that non-verbose (the app owner's) rendering and behavior never changes
+regardless of what's added to `VERBOSE_MODE`.
+
+One environment quirk worth knowing: Node 22+ ships its own experimental
+global `localStorage`, which can shadow jsdom's working one and leave
+`localStorage` undefined mid-test. `vitest.config.ts` works around this
+with `--no-experimental-webstorage` via `NODE_OPTIONS`, gated on the Node
+major version since that flag doesn't exist before Node 22 and would
+otherwise make Node refuse to start under an older version (e.g. CI's
+pinned Node 20).
 
 ### Local setup
 
