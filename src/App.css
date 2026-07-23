@@ -251,6 +251,15 @@
   min-width: 0;
 }
 
+.tip-form__row input[type='date'],
+.tip-form__row .tip-form__autocomplete input {
+  /* Same iOS height mismatch as .tip-form__category-option: the native
+     date input renders taller (~54px) than a text input's padding/font-size
+     math would suggest, so the Source input has to grow to match it. */
+  min-height: 54px;
+  box-sizing: border-box;
+}
+
 .tip-form__autocomplete {
   position: relative;
 }
