@@ -18,7 +18,11 @@ type TipRow = Omit<Tip, 'amount' | 'creditCardTips' | 'cashTips' | 'shiftType' |
 
 function toTip(row: TipRow): Tip {
   return {
-    ...row,
+    id: row.id,
+    date: row.date,
+    source: row.source,
+    category: row.category,
+    note: row.note,
     amount: Number(row.amount),
     creditCardTips: row.credit_card_tips === null ? null : Number(row.credit_card_tips),
     cashTips: row.cash_tips === null ? null : Number(row.cash_tips),

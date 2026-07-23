@@ -35,6 +35,7 @@ runs standalone (no browser chrome) once installed.
 - `npm run build` - typecheck (`tsc -b`) and production build
 - `npm run preview` - serve the production build locally
 - `npm run lint` - run Oxlint
+- `npm test` - run the test suite (Vitest + React Testing Library)
 - `npm run migrate` - one-off import of legacy Google Sheet data into
   Supabase (see `CLAUDE.md`)
 
