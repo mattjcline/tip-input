@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Never use an em dash. Use a hyphen or regular dash instead.
 - Never auto-add an agent name (e.g. "Co-Authored-By: Claude") to commit messages.
+- Keep chat responses short - no paragraphs-per-step narration. Terse status updates and results only.
 
 ## What this is
 
