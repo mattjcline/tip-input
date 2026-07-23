@@ -1,55 +1,19 @@
--- Full current schema for the tip-input app, for a FRESH Supabase project.
--- Not managed by Supabase CLI migrations - apply by pasting into the
--- Supabase project's SQL editor (Dashboard -> SQL Editor -> New query ->
--- run). See CLAUDE.md for the full setup flow.
---
--- If applying against the already-existing production project (which
--- already has tip_input_tips), don't run this file - it will fail on
--- `create table`. Use the numbered files under supabase/migrations/
--- instead, applied in order, against the live database.
---
--- Named tip_input_tips/tip_input_transfers (not just "tips") because this
--- project is shared with other apps (bar-math) in the same Supabase org -
--- a generic name would be ambiguous in the table browser and risks
--- colliding with a future bar-math table.
+-- Adds VERBOSE_MODE support: optional CC/cash breakdown + shift type on
+-- tip_input_tips, plus a new tip_input_transfers table for Tips In / Tips
+-- Out / Money Owed line items. Paste into the Supabase SQL Editor and run
+-- once against the existing project. All new tip_input_tips columns are
+-- nullable so existing rows and non-verbose users' future rows are
+-- unaffected.
 
-create table public.tip_input_tips (
-  id bigint generated always as identity primary key,
-  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  date date not null,
-  source text not null default '',
-  amount numeric(10,2) not null,
-  category text not null default 'Tips' check (category in ('Tips', 'Wages')),
-  note text not null default '',
-  created_at timestamptz not null default now(),
-  -- VERBOSE_MODE fields (see migrations/0002_verbose_mode.sql) - nullable,
-  -- only ever populated for users with user_metadata.verbose_mode = true.
-  credit_card_tips numeric(10,2),
-  cash_tips numeric(10,2),
-  shift_type text check (shift_type in ('bar', 'floor'))
-);
+alter table public.tip_input_tips
+  add column credit_card_tips numeric(10,2),
+  add column cash_tips numeric(10,2),
+  add column shift_type text check (shift_type in ('bar', 'floor'));
 
-create index tip_input_tips_user_date_idx on public.tip_input_tips (user_id, date desc, id desc);
-
-alter table public.tip_input_tips enable row level security;
-
-create policy "select own tips" on public.tip_input_tips
-  for select using (auth.uid() = user_id);
-
-create policy "insert own tips" on public.tip_input_tips
-  for insert with check (auth.uid() = user_id);
-
-create policy "update own tips" on public.tip_input_tips
-  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-create policy "delete own tips" on public.tip_input_tips
-  for delete using (auth.uid() = user_id);
-
--- Tips In / Tips Out / Money Owed line items for VERBOSE_MODE users, one
--- table with a `kind` discriminator rather than three near-identical
--- tables (they're structurally identical: name + amount + parent shift),
--- so a future "total owed to X across shifts" report is a single
--- group-by-kind-and-name query instead of a three-way UNION.
+-- One table with a `kind` discriminator rather than three near-identical
+-- tables: Tips In/Out/Money Owed are structurally identical (name +
+-- amount + parent shift), and the eventual "total owed to X" report is a
+-- single group-by-kind-and-name query instead of a three-way UNION.
 create table public.tip_input_transfers (
   id bigint generated always as identity primary key,
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -78,10 +42,12 @@ create policy "delete own transfers" on public.tip_input_transfers
   for delete using (auth.uid() = user_id);
 
 -- Atomically writes a verbose shift entry plus its transfer rows in one
--- transaction - supabase-js has no client-side multi-statement
--- transaction, and a partial write (shift saved, transfers lost) would
--- silently drop money-owed data. Runs security invoker so RLS applies
--- exactly as if the caller had issued the inserts directly.
+-- transaction. Runs security invoker so RLS applies exactly as if the
+-- caller had issued the inserts directly (user_id still defaults to
+-- auth.uid() on both tables). amount is computed here from the two
+-- breakdown numbers rather than trusted from the client, and is an
+-- ordinary insert value (not a generated column), so it has no effect on
+-- rows written by the plain (non-verbose) insert path.
 create or replace function public.create_verbose_tip(
   p_date date,
   p_source text,

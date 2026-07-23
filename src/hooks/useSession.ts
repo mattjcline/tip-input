@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+export function isVerboseMode(session: Session | null): boolean {
+  return session?.user.user_metadata?.verbose_mode === true;
+}
+
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,5 +23,5 @@ export function useSession() {
     return () => subscription.subscription.unsubscribe();
   }, []);
 
-  return { session, loading };
+  return { session, loading, verboseMode: isVerboseMode(session) };
 }
