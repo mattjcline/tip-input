@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import './App.css';
 import { Login } from './components/Login';
 import { SummaryBar } from './components/SummaryBar';
@@ -7,6 +7,10 @@ import { TipList } from './components/TipList';
 import { useSession } from './hooks/useSession';
 import { useTips } from './hooks/useTips';
 import { supabase } from './lib/supabase';
+
+const ChartsSection = lazy(() =>
+  import('./components/ChartsSection').then((m) => ({ default: m.ChartsSection }))
+);
 
 function App() {
   const { session, loading: sessionLoading } = useSession();
@@ -18,7 +22,7 @@ function App() {
 }
 
 function TipApp() {
-  const { verboseMode } = useSession();
+  const { verboseMode, chartsEnabled } = useSession();
   const { tips, loading, error, create, createVerbose, remove } = useTips();
 
   const knownSources = useMemo(() => {
@@ -55,6 +59,12 @@ function TipApp() {
 
       {error && <p className="app__error">{error}</p>}
       {loading ? <p className="app__loading">Loading…</p> : <TipList tips={tips} onDelete={remove} />}
+
+      {chartsEnabled && (
+        <Suspense fallback={null}>
+          <ChartsSection tips={tips} />
+        </Suspense>
+      )}
     </div>
   );
 }

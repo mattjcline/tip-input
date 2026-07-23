@@ -1,13 +1,6 @@
 import { useState } from 'react';
+import { startOfWeek } from '../lib/dates';
 import type { Tip } from '../types';
-
-function startOfWeek(d: Date) {
-  const date = new Date(d);
-  const day = date.getDay();
-  date.setDate(date.getDate() - day);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' });

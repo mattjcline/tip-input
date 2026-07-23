@@ -477,3 +477,26 @@
   color: var(--danger);
   background: var(--surface-alt);
 }
+
+/* Charts */
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.charts-section__chart {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.charts-section__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
