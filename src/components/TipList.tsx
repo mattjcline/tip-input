@@ -41,9 +41,10 @@ function formatDateHeading(dateStr: string) {
 interface Props {
   tips: Tip[];
   onDelete: (id: number) => void;
+  sessionTipIds?: Set<number>;
 }
 
-export function TipList({ tips, onDelete }: Props) {
+export function TipList({ tips, onDelete, sessionTipIds }: Props) {
   if (tips.length === 0) {
     return <p className="tip-list__empty">No entries yet - add your first one above.</p>;
   }
@@ -61,7 +62,7 @@ export function TipList({ tips, onDelete }: Props) {
         <section key={date} className="tip-list__group">
           <h3 className="tip-list__heading">{formatDateHeading(date)}</h3>
           {dayTips.map((tip) => (
-            <div key={tip.id} className="tip-card">
+            <div key={tip.id} className={'tip-card' + (sessionTipIds?.has(tip.id) ? ' tip-card--new' : '')}>
               <div className="tip-card__main">
                 <span className="tip-card__amount">
                   {formatCurrency(tip.amount)}

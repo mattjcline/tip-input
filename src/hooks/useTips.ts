@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { addTip, addVerboseTip, deleteTip, fetchTips, updateTip } from '../lib/api';
 import type { Tip, TipDraft, VerboseTipDraft } from '../types';
 
@@ -6,6 +6,7 @@ export function useTips() {
   const [tips, setTips] = useState<Tip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionTipIds = useRef(new Set<number>()).current;
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -37,6 +38,7 @@ export function useTips() {
     setTips((prev) => [optimisticTip, ...prev]);
     try {
       const saved = await addTip(draft);
+      sessionTipIds.add(saved.id);
       setTips((prev) => prev.map((t) => (t.id === optimisticId ? saved : t)));
     } catch (err) {
       setTips((prev) => prev.filter((t) => t.id !== optimisticId));
@@ -59,6 +61,7 @@ export function useTips() {
     setTips((prev) => [optimisticTip, ...prev]);
     try {
       const saved = await addVerboseTip(payload);
+      sessionTipIds.add(saved.id);
       setTips((prev) => prev.map((t) => (t.id === optimisticId ? saved : t)));
     } catch (err) {
       setTips((prev) => prev.filter((t) => t.id !== optimisticId));
@@ -88,5 +91,5 @@ export function useTips() {
     }
   }, [tips]);
 
-  return { tips, loading, error, reload, create, createVerbose, update, remove };
+  return { tips, loading, error, reload, create, createVerbose, update, remove, sessionTipIds };
 }
