@@ -80,7 +80,12 @@ immediately with a clear error rather than silently failing.
   Supabase Auth's user pool is per-project, not per-app, so anyone with an
   account in bar-math could technically sign into tip-input (and vice
   versa) - fine for personal/trusted use, but not a real tenant boundary if
-  that ever changes.
+  that ever changes. As of 2026-08-09 a third app is being planned to also
+  share this project (same free-tier-cap reasoning) - if it lands, expect
+  another prefixed table set alongside `tip_input_*` and `bars`/`users`/
+  `reports`/`user_bars`. Before changing anything project-level here (auth
+  settings, RLS on shared concerns, project config), check whether it
+  affects that app too.
 
 ### Frontend structure
 
@@ -153,18 +158,6 @@ computed inside the RPC from the two breakdown numbers rather than trusted
 from the client, but it's an ordinary insert value (not a `generated
 always as` column), so it has no effect on non-verbose inserts or the
 legacy rows migrated from the old Sheet.
-
-## Migrating from the old Google Sheet backend
-
-This app used to be backed by a Google Sheet via a Google Apps Script Web
-App (`apps-script/`, now retired/removed once migration is confirmed - see
-git history or `apps-script/README.md` if it's still present). Historical
-data was carried over with `scripts/migrate-to-supabase.mjs`, a one-off
-script (not part of the app bundle) that read from the old Apps Script
-`doGet` endpoint and wrote into Supabase via the service-role key, tagged
-with a target user's `auth.users` id. Not idempotent by default - rerunning
-it duplicates rows unless passed `--replace`. See
-`.env.migration.example` for the env vars it needs.
 
 ## Deploying
 
