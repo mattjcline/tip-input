@@ -22,6 +22,12 @@ function App() {
   return <TipApp />;
 }
 
+// Curly vs straight apostrophes (iOS smart punctuation) shouldn't split one
+// source into two - used both to build the dropdown and to match against it.
+function normalizeSource(s: string) {
+  return s.replace(/[‘’]/g, "'");
+}
+
 function formatMonthLabel(ym: string) {
   const [y, m] = ym.split('-');
   const date = new Date(parseInt(y), parseInt(m) - 1);
@@ -40,11 +46,10 @@ function TipApp() {
   const { pulling, distance, refreshing, threshold } = usePullToRefresh(reload);
 
   const knownSources = useMemo(() => {
-    const normalize = (s: string) => s.replace(/[‘’]/g, "'");
     const counts = new Map<string, number>();
     for (const tip of tips) {
       if (!tip.source) continue;
-      const key = normalize(tip.source);
+      const key = normalizeSource(tip.source);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([source]) => source);
@@ -64,10 +69,19 @@ function TipApp() {
     };
   }, [tips]);
 
+  // Charts get date+source filtering only - a category filter would leave the
+  // Tips vs Wages chart with a single bar.
+  const chartTips = useMemo(
+    () =>
+      tips.filter(
+        (tip) =>
+          (!dateFilter || tip.date.startsWith(dateFilter)) && (!sourceFilter || normalizeSource(tip.source) === sourceFilter)
+      ),
+    [tips, dateFilter, sourceFilter]
+  );
+
   const filteredTips = useMemo(() => {
-    return tips.filter((tip) => {
-      if (dateFilter && !tip.date.startsWith(dateFilter)) return false;
-      if (sourceFilter && tip.source !== sourceFilter) return false;
+    return chartTips.filter((tip) => {
       if (categoryFilter) {
         if (categoryFilter === 'Tips' || categoryFilter === 'Wages') {
           if (tip.category !== categoryFilter) return false;
@@ -77,7 +91,7 @@ function TipApp() {
       }
       return true;
     });
-  }, [tips, dateFilter, sourceFilter, categoryFilter]);
+  }, [chartTips, categoryFilter]);
 
   const isFiltered = dateFilter || sourceFilter || categoryFilter;
 
@@ -105,27 +119,6 @@ function TipApp() {
       </header>
 
       <SummaryBar tips={tips} />
-
-      {chartsEnabled && (
-        <div className="charts-toggle">
-          <button
-            type="button"
-            className="charts-toggle__button"
-            onClick={() => setChartsExpanded((v) => !v)}
-            aria-expanded={chartsExpanded}
-          >
-            Charts
-            <span className="charts-toggle__chevron" aria-hidden="true">
-              {chartsExpanded ? '▲' : '▼'}
-            </span>
-          </button>
-          {chartsExpanded && (
-            <Suspense fallback={null}>
-              <ChartsSection tips={tips} />
-            </Suspense>
-          )}
-        </div>
-      )}
 
       <div className="tip-filters">
         <select
@@ -169,6 +162,33 @@ function TipApp() {
           {verboseMode && <option value="floor">Floor</option>}
         </select>
       </div>
+
+      {chartsEnabled && (
+        <div className="charts-toggle">
+          <button
+            type="button"
+            className="charts-toggle__button"
+            onClick={() => setChartsExpanded((v) => !v)}
+            aria-expanded={chartsExpanded}
+          >
+            Charts
+            <span className="charts-toggle__chevron" aria-hidden="true">
+              {chartsExpanded ? '▲' : '▼'}
+            </span>
+          </button>
+          {chartsExpanded && (
+            <Suspense fallback={null}>
+              <ChartsSection
+                tips={chartTips}
+                dateFilter={dateFilter}
+                periodLabel={
+                  dateFilter.length === 7 ? formatMonthLabel(dateFilter) : dateFilter || 'All time'
+                }
+              />
+            </Suspense>
+          )}
+        </div>
+      )}
 
       <TipForm
         onSubmit={create}

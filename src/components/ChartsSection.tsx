@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { getMonthlyCategoryBreakdown, getWeeklyTrend } from '../lib/chartData';
+import { getCategoryBreakdown, getTrend } from '../lib/chartData';
 import type { Tip } from '../types';
 
 function formatCurrency(amount: number) {
@@ -42,18 +42,21 @@ function useChartColors() {
 }
 
 interface Props {
+  // Already narrowed to the selected date range (and source) by the caller.
   tips: Tip[];
+  dateFilter: string;
+  periodLabel: string;
 }
 
-export function ChartsSection({ tips }: Props) {
+export function ChartsSection({ tips, dateFilter, periodLabel }: Props) {
   const colors = useChartColors();
-  const trend = getWeeklyTrend(tips);
-  const breakdown = getMonthlyCategoryBreakdown(tips);
+  const trend = getTrend(tips, dateFilter);
+  const breakdown = getCategoryBreakdown(tips);
 
   return (
     <div className="charts-section">
       <div className="charts-section__chart">
-        <h2 className="charts-section__title">Tips - last 12 weeks</h2>
+        <h2 className="charts-section__title">Tips - {periodLabel}</h2>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={colors.border} vertical={false} />
@@ -81,7 +84,7 @@ export function ChartsSection({ tips }: Props) {
       </div>
 
       <div className="charts-section__chart">
-        <h2 className="charts-section__title">This month - Tips vs Wages</h2>
+        <h2 className="charts-section__title">Tips vs Wages - {periodLabel}</h2>
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={breakdown} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
             <XAxis dataKey="category" tick={{ fill: colors.muted, fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors.border }} />
