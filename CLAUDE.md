@@ -171,6 +171,21 @@ Actions"; Supabase Dashboard -> Authentication -> URL Configuration must
 list the Pages URL (and `http://localhost:5173/` for local dev) as an
 allowed Site URL / Redirect URL.
 
+`origin` fetches from a self-hosted git server on the LAN
+(`ssh://git@192.168.50.183:2222/mattjcline/tip-input.git`) but has two push
+URLs, so a plain `git push` goes to both that server and GitHub - and only
+the GitHub push triggers a deploy. Remote config lives in `.git/config` and
+doesn't survive a fresh clone; to recreate it:
+
+```sh
+git remote set-url --add --push origin ssh://git@192.168.50.183:2222/mattjcline/tip-input.git
+git remote set-url --add --push origin git@github.com:mattjcline/tip-input.git
+```
+
+(The first line matters - once any push URL is set, git stops pushing to
+the fetch URL.) GitHub access from the dev machine is a per-repo deploy key
+with write access (repo Settings -> Deploy keys), not an account SSH key.
+
 ### PWA / iOS specifics
 
 - Served from a GitHub Pages project page, not the domain root - `vite.config.ts`
