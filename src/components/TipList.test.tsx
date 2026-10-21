@@ -98,4 +98,15 @@ describe('TipList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete entry' }));
     expect(onDelete).not.toHaveBeenCalled();
   });
+
+  it('shows an edit button only when onEdit is passed, and calls it with the tip', async () => {
+    const tip = makeTip();
+    const { rerender } = render(<TipList tips={[tip]} onDelete={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Edit entry' })).not.toBeInTheDocument();
+
+    const onEdit = vi.fn();
+    rerender(<TipList tips={[tip]} onDelete={vi.fn()} onEdit={onEdit} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Edit entry' }));
+    expect(onEdit).toHaveBeenCalledWith(tip);
+  });
 });

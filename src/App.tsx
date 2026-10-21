@@ -7,7 +7,9 @@ import { TipList } from './components/TipList';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { useSession } from './hooks/useSession';
 import { useTips } from './hooks/useTips';
+import { normalizeSource } from './lib/sources';
 import { supabase } from './lib/supabase';
+import type { Tip } from './types';
 
 const ChartsSection = lazy(() =>
   import('./components/ChartsSection').then((m) => ({ default: m.ChartsSection }))
@@ -22,12 +24,6 @@ function App() {
   return <TipApp />;
 }
 
-// Curly vs straight apostrophes (iOS smart punctuation) shouldn't split one
-// source into two - used both to build the dropdown and to match against it.
-function normalizeSource(s: string) {
-  return s.replace(/[‘’]/g, "'");
-}
-
 function formatMonthLabel(ym: string) {
   const [y, m] = ym.split('-');
   const date = new Date(parseInt(y), parseInt(m) - 1);
@@ -36,7 +32,8 @@ function formatMonthLabel(ym: string) {
 
 function TipApp() {
   const { verboseMode, chartsEnabled } = useSession();
-  const { tips, loading, error, reload, create, createVerbose, remove, sessionTipIds } = useTips();
+  const { tips, loading, error, reload, create, createVerbose, update, remove, sessionTipIds } = useTips();
+  const [editingTip, setEditingTip] = useState<Tip | null>(null);
   const [chartsExpanded, setChartsExpanded] = useState(false);
 
   const [dateFilter, setDateFilter] = useState('');
@@ -191,10 +188,23 @@ function TipApp() {
       )}
 
       <TipForm
+        key={editingTip?.id ?? 'new'}
         onSubmit={create}
         knownSources={knownSources}
         verboseMode={verboseMode}
         onSubmitVerbose={createVerbose}
+        editing={
+          editingTip
+            ? {
+                tip: editingTip,
+                onSave: async (tip) => {
+                  await update(tip);
+                  setEditingTip(null);
+                },
+                onCancel: () => setEditingTip(null),
+              }
+            : undefined
+        }
       />
 
       {error && <p className="app__error">{error}</p>}
@@ -207,7 +217,18 @@ function TipApp() {
               Showing {filteredTips.length} of {tips.length}
             </p>
           )}
-          <TipList tips={filteredTips} onDelete={remove} sessionTipIds={sessionTipIds} />
+          <TipList
+            tips={filteredTips}
+            onDelete={(id) => {
+              if (editingTip?.id === id) setEditingTip(null);
+              remove(id);
+            }}
+            onEdit={(tip) => {
+              setEditingTip(tip);
+              document.querySelector('.tip-form')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            sessionTipIds={sessionTipIds}
+          />
         </>
       )}
     </div>

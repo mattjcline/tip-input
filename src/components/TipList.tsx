@@ -41,10 +41,11 @@ function formatDateHeading(dateStr: string) {
 interface Props {
   tips: Tip[];
   onDelete: (id: number) => void;
+  onEdit?: (tip: Tip) => void;
   sessionTipIds?: Set<number>;
 }
 
-export function TipList({ tips, onDelete, sessionTipIds }: Props) {
+export function TipList({ tips, onDelete, onEdit, sessionTipIds }: Props) {
   if (tips.length === 0) {
     return <p className="tip-list__empty">No entries yet - add your first one above.</p>;
   }
@@ -81,6 +82,16 @@ export function TipList({ tips, onDelete, sessionTipIds }: Props) {
                     </span>
                   ))}
               </div>
+              {onEdit && (
+                <button
+                  type="button"
+                  className="tip-card__delete"
+                  aria-label="Edit entry"
+                  onClick={() => onEdit(tip)}
+                >
+                  ✎
+                </button>
+              )}
               <button
                 type="button"
                 className="tip-card__delete"

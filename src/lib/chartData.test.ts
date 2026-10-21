@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCategoryBreakdown, getTrend } from './chartData';
+import { getCategoryBreakdown, getSourceAverages, getTrend, getWeekdayAverages } from './chartData';
 import type { Tip } from '../types';
 
 function makeTip(overrides: Partial<Tip> & Pick<Tip, 'date' | 'amount' | 'category'>): Tip {
@@ -87,6 +87,36 @@ describe('getCategoryBreakdown', () => {
     expect(getCategoryBreakdown([])).toEqual([
       { category: 'Tips', total: 0 },
       { category: 'Wages', total: 0 },
+    ]);
+  });
+});
+
+describe('getWeekdayAverages', () => {
+  it('averages per day worked, combining same-day entries, Sun..Sat', () => {
+    const tips = [
+      makeTip({ date: '2026-07-03', amount: 100, category: 'Tips' }), // Fri
+      makeTip({ date: '2026-07-03', amount: 50, category: 'Tips' }), // same Fri - one day
+      makeTip({ date: '2026-07-10', amount: 50, category: 'Tips' }), // Fri
+      makeTip({ date: '2026-07-10', amount: 500, category: 'Wages' }), // excluded
+    ];
+    const result = getWeekdayAverages(tips);
+    expect(result).toHaveLength(7);
+    expect(result[5]).toMatchObject({ average: 100, days: 2 });
+    expect(result[0]).toMatchObject({ average: 0, days: 0 });
+  });
+});
+
+describe('getSourceAverages', () => {
+  it('averages per day per source, merges curly apostrophes, sorts best first', () => {
+    const tips = [
+      makeTip({ date: '2026-07-01', amount: 100, category: 'Tips', source: "Louie's" }),
+      makeTip({ date: '2026-07-02', amount: 200, category: 'Tips', source: 'Louie’s' }),
+      makeTip({ date: '2026-07-01', amount: 300, category: 'Tips', source: 'Rex' }),
+      makeTip({ date: '2026-07-04', amount: 10, category: 'Tips', source: '' }), // no source, skipped
+    ];
+    expect(getSourceAverages(tips)).toEqual([
+      { label: 'Rex', average: 300, days: 1 },
+      { label: "Louie's", average: 150, days: 2 },
     ]);
   });
 });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { IncomeCategory, NameAmount, ShiftType, TipDraft, VerboseTipDraft } from '../types';
+import type { IncomeCategory, NameAmount, ShiftType, Tip, TipDraft, VerboseTipDraft } from '../types';
 import { NameAmountList } from './NameAmountList';
 
 const LAST_SOURCE_KEY = 'tip-input:last-source';
@@ -32,23 +32,33 @@ interface Props {
   knownSources: string[];
   verboseMode: boolean;
   onSubmitVerbose: (payload: VerboseTipDraft) => Promise<void>;
+  // Edit mode: the form prefills from `tip` and saves via `onSave`. The
+  // parent remounts the form (via `key`) per edited tip, so initial state is
+  // read once here rather than synced in an effect.
+  editing?: { tip: Tip; onSave: (tip: Tip) => Promise<void>; onCancel: () => void };
 }
 
-export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }: Props) {
-  const [date, setDate] = useState(defaultDate);
-  const [amount, setAmount] = useState('');
+export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose, editing }: Props) {
+  const editTip = editing?.tip;
+  // Follow the entry being edited, not the account flag - a verbose account
+  // editing a legacy plain entry must not have its amount recomputed from
+  // empty CC/Cash fields.
+  const verbose = editTip ? editTip.shiftType != null : verboseMode;
+
+  const [date, setDate] = useState(editTip?.date ?? defaultDate);
+  const [amount, setAmount] = useState(editTip ? String(editTip.amount) : '');
   const [source, setSource] = useState(
-    () => localStorage.getItem(LAST_SOURCE_KEY) ?? "Louie's"
+    () => editTip?.source ?? localStorage.getItem(LAST_SOURCE_KEY) ?? "Louie's"
   );
-  const [category, setCategory] = useState<IncomeCategory>('Tips');
-  const [note, setNote] = useState('');
+  const [category, setCategory] = useState<IncomeCategory>(editTip?.category ?? 'Tips');
+  const [note, setNote] = useState(editTip?.note ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const [ccTips, setCcTips] = useState('');
-  const [cashTips, setCashTips] = useState('');
-  const [shiftType, setShiftType] = useState<ShiftType | ''>('');
+  const [ccTips, setCcTips] = useState(editTip?.creditCardTips?.toString() ?? '');
+  const [cashTips, setCashTips] = useState(editTip?.cashTips?.toString() ?? '');
+  const [shiftType, setShiftType] = useState<ShiftType | ''>(editTip?.shiftType ?? '');
   const [tipsIn, setTipsIn] = useState<NameAmount[]>([]);
   const [tipsOut, setTipsOut] = useState<NameAmount[]>([]);
   const [moneyOwed, setMoneyOwed] = useState<NameAmount[]>([]);
@@ -57,7 +67,7 @@ export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }
     (s) => s.toLowerCase().includes(source.trim().toLowerCase()) && s !== source
   );
 
-  const canSubmit = verboseMode
+  const canSubmit = verbose
     ? date !== '' &&
       source.trim() !== '' &&
       shiftType !== '' &&
@@ -72,6 +82,26 @@ export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }
     setError(null);
     try {
       const trimmedSource = source.trim();
+      if (editing) {
+        const ccValue = ccTips === '' ? null : Number(ccTips);
+        const cashValue = cashTips === '' ? null : Number(cashTips);
+        await editing.onSave({
+          ...editing.tip,
+          date,
+          source: trimmedSource,
+          category,
+          note: note.trim(),
+          ...(verbose
+            ? {
+                creditCardTips: ccValue,
+                cashTips: cashValue,
+                shiftType: shiftType as ShiftType,
+                amount: (ccValue ?? 0) + (cashValue ?? 0),
+              }
+            : { amount: Number(amount) }),
+        });
+        return;
+      }
       if (verboseMode) {
         await onSubmitVerbose({
           date,
@@ -106,7 +136,7 @@ export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }
 
   return (
     <form className="tip-form" onSubmit={handleSubmit}>
-      {verboseMode ? (
+      {verbose ? (
         <>
           <div className="tip-form__money-row">
             <input
@@ -224,7 +254,9 @@ export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }
         aria-label="Note"
       />
 
-      {verboseMode && (
+      {/* ponytail: transfers aren't editable - updating them atomically needs an
+          RPC like create_verbose_tip; add one if fixing a transfer comes up. */}
+      {verbose && !editing && (
         <>
           <NameAmountList label="Tips in" rows={tipsIn} onChange={setTipsIn} />
           <NameAmountList label="Tips out" rows={tipsOut} onChange={setTipsOut} />
@@ -235,8 +267,13 @@ export function TipForm({ onSubmit, knownSources, verboseMode, onSubmitVerbose }
       {error && <p className="tip-form__error">{error}</p>}
 
       <button type="submit" className="tip-form__submit" disabled={!canSubmit || submitting}>
-        {submitting ? 'Saving…' : `Add ${category === 'Tips' ? 'tip' : 'wage'}`}
+        {submitting ? 'Saving…' : editing ? 'Save changes' : `Add ${category === 'Tips' ? 'tip' : 'wage'}`}
       </button>
+      {editing && (
+        <button type="button" className="tip-form__cancel" onClick={editing.onCancel}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

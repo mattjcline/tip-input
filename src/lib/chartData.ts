@@ -1,9 +1,16 @@
+import { normalizeSource } from './sources';
 import type { IncomeCategory, Tip } from '../types';
 
 export interface TrendPoint {
   key: string;
   label: string;
   total: number;
+}
+
+export interface AveragePoint {
+  label: string;
+  average: number;
+  days: number;
 }
 
 export interface CategoryBreakdown {
@@ -67,4 +74,48 @@ export function getCategoryBreakdown(tips: Tip[]): CategoryBreakdown[] {
     { category: 'Tips', total: totals.Tips },
     { category: 'Wages', total: totals.Wages },
   ];
+}
+
+// Averages are per day worked, not per entry: two Tips entries on one date
+// (e.g. a split shift) count as one day. Wages are excluded, like the trend.
+function averagePerDay(tips: Tip[], groupOf: (tip: Tip) => string) {
+  const daily = new Map<string, { group: string; total: number }>();
+  for (const tip of tips) {
+    if (tip.category !== 'Tips') continue;
+    const group = groupOf(tip);
+    const key = `${tip.date}|${group}`;
+    const day = daily.get(key) ?? { group, total: 0 };
+    day.total += tip.amount;
+    daily.set(key, day);
+  }
+
+  const sums = new Map<string, { total: number; days: number }>();
+  for (const { group, total } of daily.values()) {
+    const sum = sums.get(group) ?? { total: 0, days: 0 };
+    sum.total += total;
+    sum.days++;
+    sums.set(group, sum);
+  }
+  return sums;
+}
+
+export function getWeekdayAverages(tips: Tip[]): AveragePoint[] {
+  const sums = averagePerDay(tips, (tip) => String(new Date(tip.date + 'T00:00:00').getDay()));
+  return Array.from({ length: 7 }, (_, d) => {
+    const sum = sums.get(String(d));
+    return {
+      // Jan 4 2026 is a Sunday, so +d walks Sun..Sat in the user's locale.
+      label: new Date(2026, 0, 4 + d).toLocaleDateString(undefined, { weekday: 'short' }),
+      average: sum ? sum.total / sum.days : 0,
+      days: sum?.days ?? 0,
+    };
+  });
+}
+
+export function getSourceAverages(tips: Tip[]): AveragePoint[] {
+  const sums = averagePerDay(tips, (tip) => normalizeSource(tip.source.trim()));
+  return [...sums.entries()]
+    .filter(([source]) => source !== '')
+    .map(([label, { total, days }]) => ({ label, average: total / days, days }))
+    .sort((a, b) => b.average - a.average);
 }
